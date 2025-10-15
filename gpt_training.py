@@ -79,7 +79,8 @@ def train():
             optimizer.step()
             total_loss += loss.item()
             batch_count += 1
-            print(f"Batch {batch_count}: Train loss = {loss.item():.4f}")
+            if batch_count % 10 == 0:
+                print(f"Batch {batch_count}: Train loss = {loss.item():.4f}")
         avg_loss = total_loss / batch_count
         val_loss = evaluate(model, val_loader)
         print(f"Epoch {epoch+1}: Train loss = {avg_loss:.4f}, Validation loss = {val_loss:.4f}")
