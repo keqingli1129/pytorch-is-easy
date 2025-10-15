@@ -1,7 +1,8 @@
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from gpt2_min import GPT2, GPTConfig
+from gpt2_min import GPT2
+from gptconfig import GPTConfig
 from generate_trainingset import generate_trainingset
 from gutenberg_dataset import generate_gutenberg_dataset
 from gutenbergGPT2Dataset import GutenbergGPT2Dataset
@@ -16,8 +17,8 @@ def evaluate(model, val_loader):
     losses = []
     with torch.no_grad():
         for x, y in val_loader:
-            x = x.to(device)
-            y = y.to(device)
+            # x = x.to(device)
+            # y = y.to(device)
             logits, loss = model(x, y)
             losses.append(loss.item())
     model.train()
@@ -50,7 +51,8 @@ def train():
     val_loader = DataLoader(val_dataset, config.batch_size)
     test_loader = DataLoader(test_dataset, config.batch_size)
     # train_loader, val_loader, test_loader = generate_trainingset(tokenizer, config.block_size)
-    model = GPT2(config).to(device)
+    # model = GPT2(config).to(device)
+    model = GPT2(config)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 
     model.train()
@@ -69,8 +71,8 @@ def train():
         total_loss = 0
         batch_count = 0
         for x, y in train_loader:
-            x = x.to(device)
-            y = y.to(device)
+            # x = x.to(device)
+            # y = y.to(device)
             optimizer.zero_grad()
             logits, loss = model(x, y)
             loss.backward()
@@ -78,7 +80,7 @@ def train():
             total_loss += loss.item()
             batch_count += 1
         avg_loss = total_loss / batch_count
-        val_loss = evaluate(model, val_loader, device)
+        val_loss = evaluate(model, val_loader)
         print(f"Epoch {epoch+1}: Train loss = {avg_loss:.4f}, Validation loss = {val_loss:.4f}")
     # Save model
     torch.save(model.state_dict(), "gpt2_mini_gutenberg.pt")
