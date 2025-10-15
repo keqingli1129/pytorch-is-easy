@@ -71,7 +71,7 @@ def train():
         total_loss = 0
         batch_count = 0
         for x, y in train_loader:
-            # x = x.to(device)
+            # x = x.to(device)``
             # y = y.to(device)
             optimizer.zero_grad()
             logits, loss = model(x, y)
@@ -79,6 +79,7 @@ def train():
             optimizer.step()
             total_loss += loss.item()
             batch_count += 1
+            print(f"Batch {batch_count}: Train loss = {loss.item():.4f}")
         avg_loss = total_loss / batch_count
         val_loss = evaluate(model, val_loader)
         print(f"Epoch {epoch+1}: Train loss = {avg_loss:.4f}, Validation loss = {val_loss:.4f}")
