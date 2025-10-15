@@ -32,7 +32,7 @@ def train():
     config = GPTConfig(
         vocab_size=tokenizer.n_vocab,
         block_size=128,
-        batch_size = 32,
+        batch_size = 2,
         learning_rate = 3e-4,
         epochs = 3,
         n_layer=4,      # You can adjust these for your experiment
@@ -47,9 +47,9 @@ def train():
     test_dataset = GutenbergGPT2Dataset(hf_dataset["test"][0:100], tokenizer, config.block_size)
 
     # Create DataLoaders
-    train_loader = DataLoader(train_dataset, config.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, config.batch_size)
-    test_loader = DataLoader(test_dataset, config.batch_size)
+    train_loader = DataLoader(train_dataset, config.batch_size, shuffle=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, config.batch_size, drop_last=True)
+    test_loader = DataLoader(test_dataset, config.batch_size, drop_last=True)
     # train_loader, val_loader, test_loader = generate_trainingset(tokenizer, config.block_size)
     # model = GPT2(config).to(device)
     model = GPT2(config)
@@ -71,7 +71,7 @@ def train():
         total_loss = 0
         batch_count = 0
         for x, y in train_loader:
-            # x = x.to(device)``
+            # x = x.to(device)
             # y = y.to(device)
             optimizer.zero_grad()
             logits, loss = model(x, y)
