@@ -23,3 +23,16 @@ chunk_sizes = [len(chunk.page_content) for chunk in chunks]
 embeddings = OllamaEmbeddings(model="qwen3-embedding:0.6b", base_url="http://localhost:11434")
 idx = embeddings.embed_query("Test embedding")
 print(f"Sample embedding vector (first 5 values): {idx[:5]}")
+
+vector_store = Chroma(
+    collection_name="firstchain_collection",
+    embedding_function=embeddings,
+    persist_directory="./chroma_db_firstchain",
+)
+
+vector_store.add_documents(chunks)
+
+print("Documents added to the vector store and persisted.")
+print(f"Chunk sizes: {chunk_sizes}")
+print(f"First chunk content preview: {chunks[0].page_content[:200]}...")
+
