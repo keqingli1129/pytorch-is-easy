@@ -53,3 +53,50 @@ similarity_retriever = vector_store.as_retriever(
 # for i, doc in enumerate(similar_docs):
 #     print(f"Retrieved Document {i+1} preview: {doc.page_content[:200]}...")
 # print("Retriever test completed.")
+
+if chunks:
+    sample_metadata = chunks[0].metadata
+    print(f"Sample metadata: {sample_metadata}")
+    
+    # Get unique page numbers for filtering examples
+    page_numbers = set()
+    for chunk in chunks[:10]:  # Check first 10 chunks
+        if 'page' in chunk.metadata:
+            page_numbers.add(chunk.metadata['page'])
+    print(f"Available page numbers (sample): {sorted(list(page_numbers))[:5]}...")
+
+if page_numbers:
+    target_page = sorted(list(page_numbers))[0]  # Use first available page
+    page_results = vector_store.similarity_search(
+        "methodology approach",
+        k=10,
+        filter={"page": target_page}
+    )
+    print(f"Searching only in Page {target_page}:")
+    for i, doc in enumerate(page_results, 1):
+        print(f"  Result {i}: Page {doc.metadata.get('page')} - {doc.page_content[:150]}...")
+
+complex_results = vector_store.similarity_search(
+    "research findings",
+    k=2,
+    filter={
+        "$and": [
+            {"page": {"$lte": 10}},  # Page 0 or higher
+            {"source": {"$ne": ""}}  # Has a source
+        ]
+    }
+)
+
+print("Using complex filter (page >= 0 AND has source):")
+for i, doc in enumerate(complex_results, 1):
+    print(f"  Result {i}: Page {doc.metadata.get('page')} - {doc.page_content[:150]}...")
+
+final_query = "What are the main LLM models used for RAG?"
+context_docs = similarity_retriever.invoke(final_query)
+
+print(f"\nQuery: '{final_query}'")
+print(f"✓ Retrieved {len(context_docs)} relevant document chunks")
+
+for i, doc in enumerate(context_docs[:2], 1):  # Show first 2 for brevity
+    print(f"\nChunk {i}: {doc.page_content[:250]}...")
+    
