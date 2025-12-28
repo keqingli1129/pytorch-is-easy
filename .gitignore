@@ -220,3 +220,4 @@ __marimo__/
 /qwen-dpo-legacy
 /Qwen2.5-0.5B-DPO
 /qwen-0.5b-merged
+/distilbert-base-uncased-lora-text-classification
