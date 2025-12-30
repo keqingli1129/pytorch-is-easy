@@ -5,12 +5,15 @@ import torch
 import os
 from peft import LoraConfig, get_peft_model
 
+# Check if CUDA is available 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 dataset = load_dataset("shawhin/youtube-titles-dpo")
 
 model_name = "Qwen/Qwen2.5-0.5B-Instruct"
 
 model = AutoModelForCausalLM.from_pretrained(model_name,
-    dtype=torch.float16).to('cuda')
+    dtype=torch.float16).to(device)
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token # set pad token
@@ -52,7 +55,7 @@ tokenizer.pad_token = tokenizer.eos_token # set pad token
 ft_model_name = model_name.split('/')[1].replace("Instruct", "DPO")
 
 training_args = DPOConfig(
-    output_dir="./qwen-dpo-legacy",
+    output_dir="./qwen2.5-0.5B-Instruct-dpo-lora8",
     
     # Batch size of 1 is mandatory for 4GB VRAM
     per_device_train_batch_size=1,

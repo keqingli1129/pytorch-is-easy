@@ -221,3 +221,4 @@ __marimo__/
 /Qwen2.5-0.5B-DPO
 /qwen-0.5b-merged
 /distilbert-base-uncased-lora-text-classification
+/qwen2.5-0.5B-Instruct-dpo-lora8
