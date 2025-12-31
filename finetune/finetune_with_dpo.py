@@ -9,12 +9,15 @@ from peft import LoraConfig, get_peft_model
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 dataset = load_dataset("shawhin/youtube-titles-dpo")
-
+print(dataset['train'][1]['prompt'])
+print(dataset['train'][1]['chosen'])
+print(dataset['train'][1]['rejected'])
 model_name = "Qwen/Qwen2.5-0.5B-Instruct"
 
 model = AutoModelForCausalLM.from_pretrained(model_name,
     dtype=torch.float16).to(device)
-
+for name, module in model.named_modules():
+    print(name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token # set pad token
 
