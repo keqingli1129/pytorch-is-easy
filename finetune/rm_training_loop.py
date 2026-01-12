@@ -1,63 +1,46 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
 from reward_model import RewardModel
+from datasets import load_dataset
+from torch.utils.data import DataLoader
+from rm_training_loop import PreferenceDataset, reward_model_wrapper, tokenizer
 
-# Use the same model ID as in your reward_model.py
-MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
+# 1. Load the dataset from Hugging Face
+# We use the 'train_prefs' split which is standard in this dataset
+dataset = load_dataset("HuggingFaceH4/ultrafeedback_binarized", split="train_prefs")
 
-class PreferenceDataset(Dataset):
-    """
-    Dataset of preference pairs for reward model training.
-    """
-    def __init__(self, data, tokenizer, max_length=128):
-        self.data = data
-        self.tokenizer = tokenizer
-        self.max_length = max_length
+# 2. Pre-processing function to apply Chat Template
+# Qwen2.5 expects specific special tokens (<|im_start|>, etc.)
+def format_chat(example):
+    # apply_chat_template converts list of msgs -> string with special tokens
+    # We do NOT tokenize yet (tokenize=False) because PreferenceDataset handles that
+    chosen_text = tokenizer.apply_chat_template(example["chosen"], tokenize=False)
+    rejected_text = tokenizer.apply_chat_template(example["rejected"], tokenize=False)
+    
+    return {
+        "chosen": chosen_text, 
+        "rejected": rejected_text
+    }
 
-    def __len__(self):
-        return len(self.data)
+# 3. Apply formatting to the entire dataset
+# limit to 1000 samples for quick testing if needed
+processed_dataset = dataset.select(range(1000)).map(format_chat)
 
-    def __getitem__(self, idx):
-        item = self.data[idx]
-        
-        # Tokenize both chosen and rejected sequences
-        # We process them separately to ensure correct padding and truncation
-        chosen_enc = self.tokenizer(
-            item['chosen'], 
-            max_length=self.max_length, 
-            padding='max_length', 
-            truncation=True, 
-            return_tensors="pt"
-        )
-        rejected_enc = self.tokenizer(
-            item['rejected'], 
-            max_length=self.max_length, 
-            padding='max_length', 
-            truncation=True, 
-            return_tensors="pt"
-        )
+# 4. Integrate into your existing Loop
+# The 'processed_dataset' now has 'chosen' and 'rejected' string columns
+# exactly matching what your PreferenceDataset expects.
+preference_dataset = PreferenceDataset(processed_dataset, tokenizer)
+preference_dataloader = DataLoader(preference_dataset, batch_size=2, shuffle=True)
 
-        return {
-            'chosen_input_ids': chosen_enc['input_ids'].squeeze(0),
-            'chosen_attention_mask': chosen_enc['attention_mask'].squeeze(0),
-            'rejected_input_ids': rejected_enc['input_ids'].squeeze(0),
-            'rejected_attention_mask': rejected_enc['attention_mask'].squeeze(0)
-        }
-
-# Example preference data
-preference_data = [
-    {"chosen": "The quick brown fox jumps over the lazy dog", "rejected": "The quick brown fox jumps over dog"},
-    {"chosen": "What is a dog? A lazy brown fox", "rejected": "What is a dog? A fox"}
-]
+# ... Proceed with your existing training loop ...
+print("Dataset loaded. First example chosen text:")
+print(processed_dataset[0]['chosen'][:200]) # Preview
 
 # Initialize the RewardModel wrapper
 # This instantiates the Qwen model and tokenizer internally
+# Use the same model ID as in your reward_model.py
+MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
 reward_model_wrapper = RewardModel(model_id=MODEL_ID)
 tokenizer = reward_model_wrapper.tokenizer
-
-# Create dataset and dataloader
-preference_dataset = PreferenceDataset(preference_data, tokenizer)
-preference_dataloader = DataLoader(preference_dataset, batch_size=2, shuffle=True)
 
 def compute_rm_loss(reward_model_wrapper, batch):
     """
