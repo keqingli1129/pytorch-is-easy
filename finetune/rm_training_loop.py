@@ -1,16 +1,12 @@
 import torch
 from reward_model import RewardModel
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from torch.utils.data import DataLoader
-from rm_training_loop import PreferenceDataset, reward_model_wrapper, tokenizer
+from preference_dataset import PreferenceDataset
 
-# 1. Load the dataset from Hugging Face
-# We use the 'train_prefs' split which is standard in this dataset
-dataset = load_dataset("HuggingFaceH4/ultrafeedback_binarized", split="train_prefs")
-
-# 2. Pre-processing function to apply Chat Template
+# Pre-processing function to apply Chat Template
 # Qwen2.5 expects specific special tokens (<|im_start|>, etc.)
-def format_chat(example):
+def format_chat(example, tokenizer):
     # apply_chat_template converts list of msgs -> string with special tokens
     # We do NOT tokenize yet (tokenize=False) because PreferenceDataset handles that
     chosen_text = tokenizer.apply_chat_template(example["chosen"], tokenize=False)
@@ -21,28 +17,7 @@ def format_chat(example):
         "rejected": rejected_text
     }
 
-# 3. Apply formatting to the entire dataset
-# limit to 1000 samples for quick testing if needed
-processed_dataset = dataset.select(range(1000)).map(format_chat)
-
-# 4. Integrate into your existing Loop
-# The 'processed_dataset' now has 'chosen' and 'rejected' string columns
-# exactly matching what your PreferenceDataset expects.
-preference_dataset = PreferenceDataset(processed_dataset, tokenizer)
-preference_dataloader = DataLoader(preference_dataset, batch_size=2, shuffle=True)
-
-# ... Proceed with your existing training loop ...
-print("Dataset loaded. First example chosen text:")
-print(processed_dataset[0]['chosen'][:200]) # Preview
-
-# Initialize the RewardModel wrapper
-# This instantiates the Qwen model and tokenizer internally
-# Use the same model ID as in your reward_model.py
-MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
-reward_model_wrapper = RewardModel(model_id=MODEL_ID)
-tokenizer = reward_model_wrapper.tokenizer
-
-def compute_rm_loss(reward_model_wrapper, batch):
+def compute_rm_loss(reward_model_wrapper, batch, tokenizer):
     """
     Computes the loss for a Reward Model on a batch of preference pairs.
     """
@@ -69,19 +44,46 @@ def compute_rm_loss(reward_model_wrapper, batch):
     
     return loss
 
-# Optimizer setup
-# Access the underlying torch.nn.Module via .model
-optimizer = torch.optim.Adam(reward_model_wrapper.model.parameters(), lr=1e-5)
+def main():
+        # This instantiates the Qwen model and tokenizer internally
+        # Use the same model ID as in your reward_model.py
+        MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
+        reward_model_wrapper = RewardModel(model_id=MODEL_ID)
+        tokenizer = reward_model_wrapper.tokenizer
 
-# Training Loop
-reward_model_wrapper.model.train() # Set to train mode
+        # 1. Load the dataset from Hugging Face
+        # We use the 'train_prefs' split which is standard in this dataset
+        dataset = load_dataset("HuggingFaceH4/ultrafeedback_binarized", split="train_prefs")
+        # Save the dataset locally if not already saved
+        local_dataset_path = "./ultrafeedback_binarized_train_prefs"
+        try:
+            # Try to load from disk
+            dataset = Dataset.load_from_disk(local_dataset_path)
+            print("Loaded dataset from local disk.")
+        except Exception:
+            # If not found, download and save
+            dataset = load_dataset("HuggingFaceH4/ultrafeedback_binarized", split="train_prefs")
+            dataset.save_to_disk(local_dataset_path)
+            print("Downloaded and saved dataset locally.")
+        # 2. Apply formatting to the entire dataset
+        # limit to 1000 samples for quick testing if needed
+        processed_dataset = dataset.select(range(1000)).map(lambda x: format_chat(x, tokenizer))
+        preference_dataset = PreferenceDataset(processed_dataset, tokenizer)
+        preference_dataloader = DataLoader(preference_dataset, batch_size=2, shuffle=True)
+        # ... Proceed with your existing training loop ...
+        print("Dataset loaded. First example chosen text:")
+        print(processed_dataset[0]['chosen'][:200]) # Preview
 
-for i, batch in enumerate(preference_dataloader):
-    optimizer.zero_grad()
-    
-    loss = compute_rm_loss(reward_model_wrapper, batch)
-    
-    loss.backward()
-    optimizer.step()
-    
-    print(f"Batch {i}, Loss: {loss.item()}")
+        # Optimizer setup
+        # Access the underlying torch.nn.Module via .model
+        optimizer = torch.optim.Adam(reward_model_wrapper.model.parameters(), lr=1e-5)
+        reward_model_wrapper.model.train()
+        for i, batch in enumerate(preference_dataloader):
+            optimizer.zero_grad()
+            loss = compute_rm_loss(reward_model_wrapper, batch)
+            loss.backward()
+            optimizer.step()
+            print(f"Batch {i}, Loss: {loss.item()}")
+
+if __name__ == "__main__":
+        main()
