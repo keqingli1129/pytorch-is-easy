@@ -37,7 +37,7 @@ class RewardModel:
             outputs = self.model(**inputs)
         
         # The value head output is in outputs.value
-        # Removing the last dimension to get a 1D tensor of rewards
+        # Removing the last dimension (1) to get shape (Batch, SeqLen)
         reward = outputs.value.squeeze(-1)
         
         # If we are using the last token's value as the sequence reward:
