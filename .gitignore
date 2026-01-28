@@ -224,3 +224,4 @@ __marimo__/
 /qwen2.5-0.5B-Instruct-dpo-lora8
 /data
 /db
+finetune/data/
