@@ -73,7 +73,7 @@ train_dataloader = DataLoader(
 
 # --- 3. Optimizer & Scheduler ---
 optimizer = AdamW(model.parameters(), lr=learning_rate)
-num_training_steps = num_epochs * len(train_dataloader)
+num_training_steps = num_epochs * len(train_dataloader)//grad_accum_steps
 lr_scheduler = get_scheduler(
     name="cosine", optimizer=optimizer, num_warmup_steps=100, num_training_steps=num_training_steps
 )
