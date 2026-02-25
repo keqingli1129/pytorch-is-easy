@@ -2,7 +2,7 @@ import torch
 from reward_model import RewardModel
 from datasets import load_dataset, Dataset
 from torch.utils.data import DataLoader
-from preference_dataset import PreferenceDataset
+from ultrafeedback_binarized_rm_dataset import PreferenceDataset
 
 # Pre-processing function to apply Chat Template
 # Qwen2.5 expects specific special tokens (<|im_start|>, etc.)

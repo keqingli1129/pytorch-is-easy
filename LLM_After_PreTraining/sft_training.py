@@ -1,6 +1,6 @@
 import torch
-from finetune.policy_model import PolicyModel
-from LLM_After_PreTraining.dolly_sft_dataset import create_dolly_dataloader
+from policy_model import PolicyModel
+from dolly_sft_dataset import create_dolly_dataloader
 
 
 def sft_training_step(policy_model, optimizer, batch):
