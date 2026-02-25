@@ -80,10 +80,16 @@ def main():
         reward_model_wrapper.model.train()
         for i, batch in enumerate(preference_dataloader):
             optimizer.zero_grad()
-            loss = compute_rm_loss(reward_model_wrapper, batch)
+            loss = compute_rm_loss(reward_model_wrapper, batch, tokenizer)
             loss.backward()
             optimizer.step()
             print(f"Batch {i}, Loss: {loss.item()}")
+
+        # Save the trained reward model so it can be used for RLHF
+        rm_output_dir = "./qwen2.5-0.5B-RM"
+        reward_model_wrapper.model.save_pretrained(rm_output_dir)
+        tokenizer.save_pretrained(rm_output_dir)
+        print(f"Trained reward model saved to {rm_output_dir}")
 
 if __name__ == "__main__":
         main()
