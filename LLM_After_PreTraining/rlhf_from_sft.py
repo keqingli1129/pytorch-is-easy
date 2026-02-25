@@ -20,7 +20,7 @@ from trl import AutoModelForCausalLMWithValueHead
 # 1. Load the SFT-trained checkpoint (saved by sft_training_step.py)
 # ---------------------------------------------------------------------------
 SFT_MODEL_DIR = "./qwen2.5-0.5B-SFT"          # <-- output of SFT training
-REWARD_MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"  # placeholder; swap with your trained RM
+REWARD_MODEL_ID = "./qwen2.5-0.5B-RM"  # placeholder; swap with your trained RM
 
 tokenizer = AutoTokenizer.from_pretrained(SFT_MODEL_DIR, trust_remote_code=True)
 if tokenizer.pad_token is None:
