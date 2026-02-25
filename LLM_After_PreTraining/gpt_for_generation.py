@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from gpt.gptconfig import GPTConfig
+from gpt.gpt2_min import CausalSelfAttention, MLP, Block
 
 # --- Boilerplate Transformer Blocks (Self-Attention, MLP, etc.) ---
 # (Full implementation code as provided in the prompt)
