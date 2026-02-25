@@ -50,6 +50,12 @@ def main():
                 print(f"Epoch {epoch+1}/{num_epochs} | Step {step}/{len(dataloader)} | Loss: {loss:.4f}")
         print(f"Epoch {epoch+1} complete.")
 
+    # 4. Save the SFT-trained model so it can be loaded for RLHF
+    sft_output_dir = "./qwen2.5-0.5B-SFT"
+    policy_model.model.save_pretrained(sft_output_dir)
+    tokenizer.save_pretrained(sft_output_dir)
+    print(f"SFT model saved to {sft_output_dir}")
+
 
 if __name__ == "__main__":
     main()
