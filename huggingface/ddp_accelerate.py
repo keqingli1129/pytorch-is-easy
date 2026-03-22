@@ -37,7 +37,7 @@ def prepare_dataloader():
             texts.append(item[0])
             labels.append(item[1])
         inputs = tokenizer(texts, max_length=128, padding="max_length", truncation=True, return_tensors="pt")
-        inputs["labels"] = torch.tensor(labels)
+        inputs["labels"] = torch.tensor(labels, dtype=torch.long)
         return inputs
 
     trainloader = DataLoader(trainset, batch_size=32, collate_fn=collate_func, shuffle=True)
@@ -64,13 +64,14 @@ def evaluate(model, validloader, accelerator: Accelerator):
             pred = torch.argmax(output.logits, dim=-1)
             pred, refs = accelerator.gather_for_metrics((pred, batch["labels"]))
             acc_num += (pred.long() == refs.long()).float().sum()
-    return acc_num / len(validloader.dataset)
+    return acc_num / len(validloader.dataset)  # OK as-is, but only meaningful on rank 0
 
 
 def train(model, optimizer, trainloader, validloader, accelerator: Accelerator, epoch=3, log_step=10):
     global_step = 0
     for ep in range(epoch):
         model.train()
+        trainloader.set_epoch(ep)  # Accelerate-prepared DataLoader supports this directly
         for batch in trainloader:
             optimizer.zero_grad()
             output = model(**batch)
@@ -78,7 +79,7 @@ def train(model, optimizer, trainloader, validloader, accelerator: Accelerator, 
             accelerator.backward(loss)
             optimizer.step()
             if global_step % log_step == 0:
-                loss = accelerator.reduce(loss, "mean")
+                loss = accelerator.reduce(loss.detach(), "mean")
                 accelerator.print(f"ep: {ep}, global_step: {global_step}, loss: {loss.item()}")
             global_step += 1
         acc = evaluate(model, validloader, accelerator)
@@ -97,6 +98,7 @@ def main():
 
     train(model, optimizer, trainloader, validloader, accelerator)
 
+    accelerator.wait_for_everyone()
 
 if __name__ == "__main__":
     main()
