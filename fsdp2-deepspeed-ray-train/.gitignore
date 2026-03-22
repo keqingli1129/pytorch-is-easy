@@ -1,0 +1,51 @@
+# Hidden files and directories
+.*
+!.gitignore
+*/FashionMNIST/
+*/DeepSpeed_RayTrain_Tutorial_LIVE.ipynb
+*/FSDP2_RayTrain_Tutorial_LIVE.ipynb
+
+# Data directories
+data/
+*/data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.venv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model checkpoints and outputs
+*.pt
+*.pth
+*.ckpt
+model_*.pt
+
+# Ray
+ray_results/
+
+# OS
+.DS_Store
+Thumbs.db
